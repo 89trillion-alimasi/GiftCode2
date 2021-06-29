@@ -37,7 +37,7 @@ type GiftCode struct {
 	// code 存储内部生成的礼品码
 	Code string `json:"code"`
 
-	// 礼品码过期时间，内部 redis 使用
+	// 礼品码过期时间，内部 config 使用
 	Expiration time.Duration `json:"-"`
 }
 
@@ -56,12 +56,17 @@ type GiftPackage struct {
 	Num  int    `json:"num"`
 }
 
-
-
 // VerifyRequest 是验证礼品码的请求实体
 type VerifyRequest struct {
 	// Code 礼品码
 	Code string `json:"code"`
 	// User 领取用户
 	User string `json:"user"`
+}
+
+//用户登陆数据
+type UerInfo struct {
+	UID     string
+	Gold    string
+	Diamond string
 }

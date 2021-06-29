@@ -2,35 +2,47 @@
 
 ## 1.整体框架
 
-​	结合gin框架和redis使用，开发了一个服务完成基本需求：创建和验证礼品码，实现三个接口1）管理后台调用-创建礼品码。2）管理后台调用-查询礼品码信息。3）客户调用-验证礼品码	
+（1）【客户端调用, http】新增注册与登录接口：客户端传递唯一识别码（一个任意字符串）至服务器，服务器通过该识别码判断是否存在该玩家：不存在则注册新用户，生成唯一UID；存在则返回用户登陆数据（唯一UID、金币数、钻石数）。玩家信息储存在mongo数据库中
+
+（2）【客户端调用, http】验证礼品码接口修改：按照管理员所添加的金币与钻石奖励数目，发放奖励存储至数据库。编译protobuf文件，将返回信息封装为protobuf对象以 **[]byte** 作为接口返回值返回给客户端。客户端接收到的是二进制序列，可以编写单测函数通过protobuf的decode方法解析，自测内容正确性。
 
 ## 2.目录结构
 
 ```
 .
+├── Protobuf
+│   ├── clientresult.pb.go #proto.go文件
+│   └── clientresult.proto
 ├── Readmd.md
+├── config
+│   ├── mongodb.go #mongodb初始化
+│   └── redis.go #redis初始化
 ├── controller
-│   ├── controller.go
-│   └── router.go
+│   └── controller.go
+├── flow
+│   └── gift4.png #流程图
 ├── go.mod
 ├── go.sum
 ├── http
-│   ├── Gift_flow_process.png #流程图
 │   ├── main
-│   └── main.go 
+│   └── main.go
 ├── model
-│   └── model.go #存储数据结构
-├── redis
-│   └── redis.go
+│   ├── Dboperation
+│   │   └── dbopreation.go
+│   └── model.go
+├── router
+│   └── router.go #路由
 ├── service
-│   ├── rand.go #随机生成礼品码
+│   ├── rand.go #礼品码随机码生成
 │   ├── service.go #业务逻辑
-│   └── service_test.go
+│   ├── service_test.go
+│   └── userinfo.go #用户随机码生成
 └── test
     ├── __pycache__
     │   └── locust_test.cpython-39.pyc
-    ├── locust_gift.html
+    ├── giftcode4_locust.html
     └── locust_test.py
+
 
 ```
 
@@ -40,14 +52,14 @@
 
 ​	
 
-| 层        | 文件夹          | 主要职责               | 调用关系               | 其他说明     |
-| --------- | --------------- | ---------------------- | ---------------------- | ------------ |
-| 应用层    | /http/main.go   | 程序启动               | 调用控制层，和redis层  |              |
-| redis层   | /redis/redis.go | 初始化连接redis        | 被服务层和应用层调用   |              |
-| 控制层    | /controller     | 处理请求和构建回复消息 | 被路由调用，调用服务层 |              |
-| service层 | /service/       | 业务逻辑实现           | 被控制层调用           | 个层互不调用 |
-| model层   | /model          | 数据模型               | 被服务层所调用         |              |
-|           |                 |                        |                        |              |
+| 层        | 文件夹                                | 主要职责                     | 调用关系                         | 其他说明     |
+| --------- | ------------------------------------- | ---------------------------- | -------------------------------- | ------------ |
+| 应用层    | /http/main.go                         | 程序启动                     | 调用控制层，和redis层            |              |
+| config层  | /config/redis.go , /config/mongodb.go | 初始化连接redis ,mongodb     | 被服务层和应用层调用,model层调用 |              |
+| 控制层    | /controller                           | 处理请求和构建回复消息       | 被路由调用，调用服务层           |              |
+| service层 | /service/                             | 业务逻辑实现                 | 被控制层调用                     | 各层互不调用 |
+| model层   | /model                                | 数据模型 ，操作mongodb数据库 | 被服务层所调用                   | 各层互不调用 |
+| 路由层    | /router                               | 路由初始化                   | 被应用层调用，调用控制层         |              |
 
 
 
@@ -55,94 +67,25 @@
 
 数据库存储信息
 
-| 内容             | 数据库 | key  | 类型   | 说明       |
-| ---------------- | ------ | ---- | ------ | ---------- |
-| 礼品码及相关信息 | redis  | code | string | "HVALJMX9" |
+| 内容   | 数据库  | filed   | 类型   | 说明           |
+| ------ | ------- | ------- | ------ | -------------- |
+| 用户id | mongodb | uid     | string | uid：userid    |
+| 金币数 | mongodb | gold    | string | gold：“40”     |
+| 钻石数 | mongodb | diamond | string | diamond：“100” |
 
-保存礼品码所需信息
+```
+UerInfo保存用户数据信息
+```
 
-| 内容                            | field          | 类型              |
-| ------------------------------- | -------------- | ----------------- |
-| 礼品描述信息                    | Description    | string            |
-| 礼品码类型                      | Type           | int               |
-| 可领取用户                      | ReceivingUser  | string            |
-| 可领取次数                      | AvailableTimes | string            |
-| 有效期                          | ValidPeriod    | string            |
-| 礼品码被创建的时间              | CreatTime      | string            |
-| 创建这个礼品码的用户            | CreateUser     | string            |
-| 存储礼品包内容                  | GiftPackages   | []GiftPackage     |
-| 存储已经领取过该礼品码的用户    | ReceivedUsers  | Map[string]string |
-| 礼品码已经被领取过的次数        | ReceivedCount  | int               |
-| 存储内部生成的礼品码            | Code           | string            |
-| 礼品码过期时间，内部 redis 使用 | Expiration     | Time.Duration     |
-
-GiftPackage存储信息
-
-| 内容     | field | 类型   |
-| -------- | ----- | ------ |
-| 礼品名字 | Name  | string |
-| 礼品数量 | Num   | int    |
-
-验证礼品码的请求实体
-
-| 内容   | field | 类型   |
-| ------ | ----- | ------ |
-| 礼品码 | Code  | string |
-| 用户   | User  | string |
-
-
+| 内容   | field   | 类型   |
+| ------ | ------- | ------ |
+| 用户id | UID     | string |
+| 金币   | Gold    | string |
+| 钻石   | Diamond | string |
 
 ## 5.接口设计
 
-### 1.创建礼品码
-
-### 	请求方式
-
-​		http post
-
-### 	接口地址
-
-​		http://localhost:8080/create_gift_code
-
-### 	请求参数
-
-```json
-{
-  "type": 1,
-  "receiving_user": "alms",
-  "valid_period": "2021-06-29 17:48:00",
-  "create_user": "admin",
-  "available_times": 2,
-  "description": "测试type1",
-  "gift_packages": [
-    {
-      "name": "金币",
-      "num": 10
-    },
-    {
-      "name": "钻石",
-      "num": 20
-    }
-  ]
-}
-```
-
-### 请求响应
-
-```json
-{
-  "code": "1ORE35SJ"
-}
-```
-
-### 	响应状态吗	
-
-| 状态码 | 说明         |
-| ------ | ------------ |
-| 200    | 成功         |
-| 400    | 返回错误信息 |
-
-### 2.查询礼品码
+### 1.用户登录
 
 ### 	请求方式
 
@@ -150,51 +93,36 @@ GiftPackage存储信息
 
 ### 	接口地址
 
-http://localhost:8080/query_gift_code
+​		http://localhost:8080/login?userid=HrKcLApw
 
 ### 	请求参数
 
 ```json
-code=1ORE35SJ
+userid=HrKcLApw
 ```
 
 ### 请求响应
 
 ```json
 {
-  "description": "测试type1",
-  "type": 3,
-  "receiving_user": "alms",
-  "available_times": 2,
-  "valid_period": "2021-06-25 17:48:00",
-  "create_time": "2021-06-25 17:46:07",
-  "create_user": "admin",
-  "gift_packages": [
-    {
-      "name": "金币",
-      "num": 10
-    },
-    {
-      "name": "钻石",
-      "num": 20
+    "Status": "存在成功返回",
+    "User": {
+        "UID": "HrKcLApw",
+        "Gold": "20",
+        "Diamond": "180"
     }
-  ],
-  "received_users": null,
-  "received_count": 0,
-  "code": "1ORE35SJ"
 }
 ```
 
 ### 	响应状态吗	
 
-| 状态码 | 说明         |
-| ------ | ------------ |
-| 200    | 成功         |
-| 400    | 返回错误信息 |
+| 状态码 | 说明                         |
+| ------ | ---------------------------- |
+| 200    | 用户登录成功                 |
+| 201    | 用户不存在，已为用户主动注册 |
+| 507    | 数据未能插入数据库           |
 
-### 3.验证礼品码
-
-### 1.创建礼品码
+### 2.用户使用礼品码
 
 ### 	请求方式
 
@@ -202,47 +130,39 @@ code=1ORE35SJ
 
 ### 	接口地址
 
-​		http://localhost:8080/verify_gift_code
+http://localhost:8080/Client_Verify_GiftCode
 
 ### 	请求参数
 
 ```json
 {
-  "user": "alms",
-  "code": "1ORE35SJ"
+  "user": "HrKcLApw",
+  "code": "1ZAZB42T"
 }
 ```
 
 ### 请求响应
 
 ```json
-{
-  "GiftPackages": [
-    {
-      "name": "金币",
-      "num": 10
-    },
-    {
-      "name": "钻石",
-      "num": 20
-    }
-  ]
-}
+protobuf二进制数
 ```
 
 ### 	响应状态吗	
 
-| 状态码 | 说明         |
-| ------ | ------------ |
-| 200    | 成功         |
-| 400    | 返回错误信息 |
+| 状态码 | 说明                                   |
+| ------ | -------------------------------------- |
+| 200    | 成功                                   |
+| 400    | 请正确输入参数                         |
+| 401    | "用户不存在或者礼品码已失效请检查重试" |
+| 403    | "序列化protobuf失败"                   |
 
-### 	
+### 
 
 ## 6.第三方库
 
 ```
-github.com/go-redis/redis v6.15.9+incompatible
+github.com/go-redis/redis v6.15.9+incompatible 礼品码信息的保存
+
 ```
 
 ## 7.如何编译执行
@@ -267,9 +187,7 @@ make vet
 
 
 
-## 8.todo
+### todo
 
-1.随机礼品码生成判断是否已存在需要访问redis，可不可以不需要这个，虽然重复概率很低
-
-2.如何随机挑选用户给礼品类别1的用户，现在这个部分属于写死了。
+http状态码返回，还是有点乱，后续返回结果状态调整
 
