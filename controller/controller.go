@@ -6,7 +6,6 @@ import (
 	"Giftcode-mongo-protobuf/service"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"time"
 )
 
@@ -85,7 +84,7 @@ func CreateGiftCode(c *gin.Context) {
 			if n > 0 {
 				continue
 			} else {
-				c.String(400, "5次创建礼品码失败，请重新创建")
+				c.JSON(400, gin.H{MESSAGE: "5次创建礼品码失败，请重新创建"})
 				return
 			}
 		}
@@ -140,7 +139,7 @@ func Login(c *gin.Context) {
 		c.JSON(201, gin.H{"Status": err, "NewUser": user})
 		return
 	} else if err == "插入不成功" {
-		c.String(http.StatusInsufficientStorage, err)
+		c.String(507, err)
 	}
 
 }
@@ -182,13 +181,13 @@ func ClientVerifyGiftCode(c *gin.Context) {
 
 	// 检查礼品码
 	if req.Code == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入礼品码"})
+		c.JSON(401, gin.H{MESSAGE: "请输入礼品码"})
 		return
 	}
 
 	// 检查领取用户
 	if req.User == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入领取用户"})
+		c.JSON(402, gin.H{MESSAGE: "请输入领取用户"})
 		return
 	}
 
@@ -197,11 +196,14 @@ func ClientVerifyGiftCode(c *gin.Context) {
 	if result == nil {
 		switch err {
 		case "用户不存在，请先注册", "礼品码已失效或者礼包已领取":
-			c.String(401, "用户不存在或者礼品码已失效请检查重试")
+			c.JSON(403, gin.H{MESSAGE: "用户不存在或者礼品码已失效请检查重试"})
 		case "序列化protobuf失败":
-			c.String(403, "序列化protobuf失败")
+			c.JSON(404, gin.H{MESSAGE: "序列化protobuf失败"})
 		}
 		return
+	} else {
+
 	}
 	c.Writer.Write(result)
+	c.JSON(200, gin.H{MESSAGE: "获取成功"})
 }
