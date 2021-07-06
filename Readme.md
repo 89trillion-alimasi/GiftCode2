@@ -186,7 +186,15 @@ make vet
 ./main
 ```
 
-
+详细步骤
 
 ![gift4](gift4.png)
+
+整体逻辑思想![giftmodify2](giftmodify2.png)
+
+
+
+
+
+
 
