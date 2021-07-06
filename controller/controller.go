@@ -6,6 +6,7 @@ import (
 	"Giftcode-mongo-protobuf/service"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func CreateGiftCode(c *gin.Context) {
 	var gift model.GiftCode
 	// 绑定post参数
 	if err := c.Bind(&gift); err != nil {
-		c.JSON(400, gin.H{MESSAGE: err.Error()})
+		c.JSON(ParameterBindingIsUnsuccessful, gin.H{MESSAGE: StatusText(ParameterBindingIsUnsuccessful)})
 		return
 	}
 
@@ -28,48 +29,47 @@ func CreateGiftCode(c *gin.Context) {
 		// 一次性消耗强制设置领取次数为 1
 		gift.AvailableTimes = 1
 		if gift.ReceivingUser == "" {
-			c.JSON(400, gin.H{MESSAGE: "请指定领取用户"})
+			c.JSON(ReceivingUserIsEmpty, gin.H{MESSAGE: StatusText(ReceivingUserIsEmpty)})
 			return
 		}
 	case 2: // 2 - 不指定用户限制兑换次数
 		if gift.AvailableTimes <= 0 {
-			c.JSON(400, gin.H{MESSAGE: "请指定可兑换次数"})
+			c.JSON(SpecifyTheNumberOfRedemptions, gin.H{MESSAGE: StatusText(SpecifyTheNumberOfRedemptions)})
 			return
 		}
 	case 3: // 3 - 不限用户不限次数兑换 无用户限制 无兑换次数限制这里不做处理
 	default: // 非法填写的礼品码类型
-		c.JSON(400, gin.H{MESSAGE: "礼品码类型不合法"})
+		c.JSON(Invalidgiftcodetype, gin.H{MESSAGE: StatusText(Invalidgiftcodetype)})
 		return
 	}
 
 	// 检查礼品码描述
 	if gift.Description == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入礼品码描述信息"})
+		c.JSON(GiftCodeDescription, gin.H{MESSAGE: StatusText(GiftCodeDescription)})
 		return
 	}
 
 	// 检查礼品码有效期是否为空
 	if gift.ValidPeriod == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入有效期"})
+		c.JSON(PleaseEnterAValidTime, gin.H{MESSAGE: StatusText(PleaseEnterAValidTime)})
 		return
 	}
 
 	// 检查礼品码有效期是否正确
 	vp, err := time.ParseInLocation("2006-01-02 15:04:05", gift.ValidPeriod, time.Local)
 	if err != nil {
-		c.JSON(400, gin.H{MESSAGE: "输入的礼品码有效期格式不正确"})
+		c.JSON(IncorrectTimeFormat, gin.H{MESSAGE: StatusText(IncorrectTimeFormat)})
 		return
 	}
 	exp := vp.Sub(time.Now())
 	if exp <= 0 {
-		c.JSON(400, gin.H{MESSAGE: "输入的礼品码有效期小于当前时间"})
+		c.JSON(InvalidTime, gin.H{MESSAGE: StatusText(InvalidTime)})
 		return
 	}
-	gift.Expiration = exp
 
 	// 检查礼品码包含的礼品包是否为空
 	if gift.GiftPackages == nil || len(gift.GiftPackages) == 0 {
-		c.JSON(400, gin.H{MESSAGE: "请输入礼包内容"})
+		c.JSON(PackageContent, gin.H{MESSAGE: StatusText(PackageContent)})
 		return
 	}
 	var n = 5
@@ -84,7 +84,7 @@ func CreateGiftCode(c *gin.Context) {
 			if n > 0 {
 				continue
 			} else {
-				c.JSON(400, gin.H{MESSAGE: "5次创建礼品码失败，请重新创建"})
+				c.String(CreateGiftCodeFaied, StatusText(CreateGiftCodeFaied))
 				return
 			}
 		}
@@ -92,29 +92,28 @@ func CreateGiftCode(c *gin.Context) {
 	}
 	logrus.Infof("生成新的礼品码: %s", gift.Code)
 
-	// 将礼品码存储到 config
 	if err := service.SaveGiftCode(&gift); err != nil {
-		c.JSON(400, gin.H{MESSAGE: err.Error()})
+		c.JSON(InsertionFailed, gin.H{MESSAGE: StatusText(InsertionFailed)})
 		return
 	}
 
 	// 返回礼品码
-	c.JSON(200, gin.H{"code": gift.Code})
+	c.JSON(CreatedSuccessfully, gin.H{"code": StatusText(CreatedSuccessfully)})
 }
 
 //查询礼品码
-func QueryGiftCode(c *gin.Context) {
+func queryGiftCode(c *gin.Context) {
 	// 检测是否输入了礼品码
 	code := c.Query("code")
 	if code == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入礼品码"})
+		c.JSON(GiftCodeErr, gin.H{MESSAGE: StatusText(GiftCodeErr)})
 		return
 	}
 
-	// 尝试从 config 中查找该礼品码
+	// 尝试从 redis 中查找该礼品码
 	giftCode := service.QueryGiftCode(code)
 	if giftCode == nil {
-		c.JSON(400, gin.H{MESSAGE: "礼品码输入错误或礼品码已过期"})
+		c.JSON(GiftCodeHasExpired, gin.H{MESSAGE: StatusText(GiftCodeHasExpired)})
 		return
 	}
 
@@ -126,20 +125,20 @@ func QueryGiftCode(c *gin.Context) {
 func Login(c *gin.Context) {
 	user_id := c.Query("userid")
 	if len(user_id) == 0 {
-		c.String(400, "请输入用户id")
+		c.JSON(Userlogin, gin.H{MESSAGE: StatusText(Userlogin)})
 		return
 	}
 
 	user, err := service.Login(user_id)
 
 	if err == "用户存在成功返回" {
-		c.JSON(200, gin.H{"Status": err, "User": user})
+		c.JSON(Successful, gin.H{"Status": err, "User": user})
 		return
 	} else if err == "用户不存在，已为用户主动注册" {
-		c.JSON(201, gin.H{"Status": err, "NewUser": user})
+		c.JSON(Registered, gin.H{"Status": err, "NewUser": user})
 		return
 	} else if err == "插入不成功" {
-		c.String(507, err)
+		c.JSON(InsertionUserFailed, gin.H{MESSAGE: StatusText(InsertionUserFailed)})
 	}
 
 }
@@ -148,46 +147,46 @@ func Login(c *gin.Context) {
 func VerifyGiftCode(c *gin.Context) {
 	var req model.VerifyRequest
 	if err := c.Bind(&req); err != nil {
-		c.JSON(400, gin.H{MESSAGE: err.Error()})
+		c.JSON(ParameterBindingIsUnsuccessful, gin.H{MESSAGE: StatusText(PleaseEnterAValidTime)})
 		return
 	}
 
 	// 检查礼品码
 	if req.Code == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入礼品码"})
+		c.JSON(GiftCodeErr, gin.H{MESSAGE: StatusText(GiftCodeErr)})
 		return
 	}
 
 	// 检查领取用户
 	if req.User == "" {
-		c.JSON(400, gin.H{MESSAGE: "请输入领取用户"})
+		c.JSON(ReceivingUserIsEmpty, gin.H{MESSAGE: StatusText(ReceivingUserIsEmpty)})
 		return
 	}
 
 	gifCode, err := service.VerifyGiftCode(req)
 	if err != nil {
-		c.JSON(400, gin.H{MESSAGE: err.Error()})
+		c.JSON(FailedToClaim, gin.H{MESSAGE: StatusText(FailedToClaim)})
 		return
 	}
-	c.JSON(200, gin.H{"GiftPackages": gifCode.GiftPackages})
+	c.JSON(http.StatusInsufficientStorage, gin.H{"GiftPackages": gifCode.GiftPackages})
 }
 
 func ClientVerifyGiftCode(c *gin.Context) {
 	var req model.VerifyRequest
 	if err := c.Bind(&req); err != nil {
-		c.JSON(400, gin.H{MESSAGE: err.Error()})
+		c.JSON(ParameterBindingIsUnsuccessful, gin.H{MESSAGE: StatusText(ParameterBindingIsUnsuccessful)})
 		return
 	}
 
 	// 检查礼品码
 	if req.Code == "" {
-		c.JSON(401, gin.H{MESSAGE: "请输入礼品码"})
+		c.JSON(GiftCodeErr, gin.H{MESSAGE: StatusText(GiftCodeErr)})
 		return
 	}
 
 	// 检查领取用户
 	if req.User == "" {
-		c.JSON(402, gin.H{MESSAGE: "请输入领取用户"})
+		c.JSON(ReceivingUserIsEmpty, gin.H{MESSAGE: StatusText(ReceivingUserIsEmpty)})
 		return
 	}
 
@@ -196,14 +195,14 @@ func ClientVerifyGiftCode(c *gin.Context) {
 	if result == nil {
 		switch err {
 		case "用户不存在，请先注册", "礼品码已失效或者礼包已领取":
-			c.JSON(403, gin.H{MESSAGE: "用户不存在或者礼品码已失效请检查重试"})
+			c.JSON(FailedToClaim, gin.H{MESSAGE: "用户不存在或者礼品码已失效请检查重试"})
 		case "序列化protobuf失败":
-			c.JSON(404, gin.H{MESSAGE: "序列化protobuf失败"})
+			c.JSON(FailedToClaim, gin.H{MESSAGE: "序列化protobuf失败"})
 		}
 		return
 	} else {
 
 	}
 	c.Writer.Write(result)
-	c.JSON(200, gin.H{MESSAGE: "获取成功"})
+	c.JSON(Successful, gin.H{MESSAGE: "获取成功"})
 }
