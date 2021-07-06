@@ -20,8 +20,7 @@
 ├── controller
 │   ├── StatusErr.go #状态码
 │   └── controller.go
-├── flow
-│   └── gift4.png #流程图
+├── gift4.png
 ├── go.mod
 ├── go.sum
 ├── http
@@ -189,5 +188,5 @@ make vet
 
 
 
-![gift4](/Users/alimasi/go/src/Giftcode-Mongo-protobuf/flow/gift4.png)
+![gift4](gift4.png)
 
