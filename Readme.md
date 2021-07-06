@@ -11,13 +11,14 @@
 ```
 .
 ├── Protobuf
-│   ├── clientresult.pb.go #proto.go文件
+│   ├── clientresult.pb.go
 │   └── clientresult.proto
-├── Readmd.md
+├── Readme.md
 ├── config
-│   ├── mongodb.go #mongodb初始化
-│   └── redis.go #redis初始化
+│   ├── mongodb.go
+│   └── redis.go
 ├── controller
+│   ├── StatusErr.go #状态码
 │   └── controller.go
 ├── flow
 │   └── gift4.png #流程图
@@ -31,12 +32,12 @@
 │   │   └── dbopreation.go
 │   └── model.go
 ├── router
-│   └── router.go #路由
+│   └── router.go
 ├── service
-│   ├── rand.go #礼品码随机码生成
-│   ├── service.go #业务逻辑
+│   ├── rand.go
+│   ├── service.go
 │   ├── service_test.go
-│   └── userinfo.go #用户随机码生成
+│   └── userinfo.go
 └── test
     ├── __pycache__
     │   └── locust_test.cpython-39.pyc
@@ -119,9 +120,9 @@ userid=HrKcLApw
 | 状态码 | 说明                         |
 | ------ | ---------------------------- |
 | 200    | 用户登录成功                 |
-| 201    | 用户不存在，已为用户主动注册 |
+| 202    | 用户不存在，已为用户主动注册 |
 | 507    | 数据未能插入数据库           |
-| 400    | 请输入用户id                 |
+| 414    | 请输入用户id                 |
 
 ### 2.用户使用礼品码
 
@@ -150,12 +151,12 @@ protobuf二进制数
 
 ### 	响应状态吗	
 
-| 状态码 | 说明                                   |
-| ------ | -------------------------------------- |
-| 200    | 成功                                   |
-| 400    | 请正确输入参数                         |
-| 401    | "用户不存在或者礼品码已失效请检查重试" |
-| 403    | "序列化protobuf失败"                   |
+| 状态码 | 说明                                         |
+| ------ | -------------------------------------------- |
+| 200    | 成功                                         |
+| 400    | 绑定参数未成功                               |
+| 411    | 礼品码为空                                   |
+| 412    | "序列化protobuf失败"或用户不存在或礼品码失效 |
 
 ### 
 
@@ -188,7 +189,5 @@ make vet
 
 
 
-### todo
-
-http状态码返回，还是有点乱，后续返回结果状态调整
+![gift4](/Users/alimasi/go/src/Giftcode-Mongo-protobuf/flow/gift4.png)
 

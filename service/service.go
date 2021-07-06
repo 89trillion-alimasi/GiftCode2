@@ -55,12 +55,8 @@ func VerifyGiftCode(req model.VerifyRequest) (*model.GiftCode, error) {
 		if req.User != gifCode.ReceivingUser {
 			return nil, errors.New("当前礼品码已经指定用户，您输入的用户无权领取")
 		}
-		cmd := config.RDB.Del(gifCode.Code)
-		if cmd.Err() != nil {
-			return nil, cmd.Err()
-		}
-		if cmd.Val() != 1 {
-			return nil, errors.New("礼品码领取失败: 礼品码删除失败")
+		if _, err := One_time(gifCode); err != nil {
+			return nil, err
 		}
 
 		// TODO: 当前没有真实用户体系，所以这里模拟添加奖励
@@ -71,12 +67,8 @@ func VerifyGiftCode(req model.VerifyRequest) (*model.GiftCode, error) {
 
 		// 如果礼品码正好还剩一次可以领取，领取后需要删除
 		if gifCode.AvailableTimes == 1 {
-			cmd := config.RDB.Del(gifCode.Code)
-			if cmd.Err() != nil {
-				return nil, cmd.Err()
-			}
-			if cmd.Val() != 1 {
-				return nil, errors.New("礼品码领取失败: 礼品码删除失败")
+			if _, err := One_time(gifCode); err != nil {
+				return nil, err
 			}
 			// TODO: 当前没有真实用户体系，所以这里模拟添加奖励
 			logrus.Infof("用户 %s 添加奖励完成", req.User)
@@ -222,4 +214,16 @@ func ClientVerifyGiftCode(user_id, gifcode string) ([]byte, string) {
 	}
 
 	return out, "success"
+}
+
+//只能取一次礼品
+func One_time(code *model.GiftCode) (*model.GiftCode, error) {
+	cmd := config.RDB.Del(code.Code)
+	if cmd.Err() != nil {
+		return nil, cmd.Err()
+	}
+	if cmd.Val() != 1 {
+		return nil, errors.New("礼品码领取失败: 礼品码删除失败")
+	}
+	return code, nil
 }
