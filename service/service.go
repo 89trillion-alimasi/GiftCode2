@@ -16,13 +16,13 @@ import (
 
 // SaveGiftCode 将礼品码存储到config 中
 func SaveGiftCode(gift *model.GiftCode) error {
-	gift.CreatTime = time.Now().Format("2006-01-02 15:04:05")
+	gift.CreatTime = time.Now().Unix()
 	bs, err := jsoniter.Marshal(gift)
 	if err != nil {
 		return err
 	}
-
-	return config.RDB.Set(gift.Code, string(bs), gift.Expiration).Err()
+	ex := time.Unix(gift.ValidPeriod, 0).Sub(time.Now())
+	return config.RDB.Set(gift.Code, string(bs), ex).Err()
 }
 
 // QueryGiftCode 查询礼品码信息

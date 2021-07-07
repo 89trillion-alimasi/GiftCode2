@@ -6,7 +6,6 @@ import (
 	"Giftcode-mongo-protobuf/service"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"net/http"
 	"time"
 )
 
@@ -50,19 +49,19 @@ func CreateGiftCode(c *gin.Context) {
 	}
 
 	// 检查礼品码有效期是否为空
-	if gift.ValidPeriod == "" {
+	if gift.ValidPeriod == 0 {
 		c.JSON(PleaseEnterAValidTime, gin.H{MESSAGE: StatusText(PleaseEnterAValidTime)})
 		return
 	}
 
 	// 检查礼品码有效期是否正确
-	vp, err := time.ParseInLocation("2006-01-02 15:04:05", gift.ValidPeriod, time.Local)
-	if err != nil {
-		c.JSON(IncorrectTimeFormat, gin.H{MESSAGE: StatusText(IncorrectTimeFormat)})
-		return
-	}
-	exp := vp.Sub(time.Now())
-	if exp <= 0 {
+	//vp, err := time.ParseInLocation("2006-01-02 15:04:05", gift.ValidPeriod, time.Local)
+	//if err != nil {
+	//	c.JSON(IncorrectTimeFormat, gin.H{MESSAGE: StatusText(IncorrectTimeFormat)})
+	//	return
+	//}
+	//exp := vp.Sub(time.Now())
+	if gift.ValidPeriod <= time.Now().Unix() {
 		c.JSON(InvalidTime, gin.H{MESSAGE: StatusText(InvalidTime)})
 		return
 	}
@@ -102,7 +101,7 @@ func CreateGiftCode(c *gin.Context) {
 }
 
 //查询礼品码
-func queryGiftCode(c *gin.Context) {
+func QueryGiftCode(c *gin.Context) {
 	// 检测是否输入了礼品码
 	code := c.Query("code")
 	if code == "" {
@@ -168,7 +167,7 @@ func VerifyGiftCode(c *gin.Context) {
 		c.JSON(FailedToClaim, gin.H{MESSAGE: StatusText(FailedToClaim)})
 		return
 	}
-	c.JSON(http.StatusInsufficientStorage, gin.H{"GiftPackages": gifCode.GiftPackages})
+	c.JSON(Successful, gin.H{"GiftPackages": gifCode.GiftPackages})
 }
 
 func ClientVerifyGiftCode(c *gin.Context) {

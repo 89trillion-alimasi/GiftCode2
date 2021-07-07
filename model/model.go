@@ -17,10 +17,10 @@ type GiftCode struct {
 	AvailableTimes int `json:"available_times"`
 
 	// ValidPeriod 有效期
-	ValidPeriod string `json:"valid_period"`
+	ValidPeriod int64 `json:"valid_period"`
 
 	// CreatTime 礼品码被创建的时间
-	CreatTime string `json:"create_time"`
+	CreatTime int64 `json:"create_time"`
 
 	// CreateUser 创建这个礼品码的用户
 	CreateUser string `json:"create_user"`
@@ -29,7 +29,7 @@ type GiftCode struct {
 	GiftPackages []GiftPackage `json:"gift_packages"`
 
 	// ReceivedUsers 存储已经领取过该礼品码的用户
-	ReceivedUsers map[string]string `json:"received_users"`
+	ReceivedUsers map[string]int64 `json:"received_users"`
 
 	// 礼品码已经被领取过的次数
 	ReceivedCount int `json:"received_count"`
@@ -44,9 +44,9 @@ type GiftCode struct {
 // AddReceivedUser 将领取用户添加到礼品码的领取列表中，同时增加领取次数
 func (g *GiftCode) AddReceivedUser(user string) {
 	if g.ReceivedUsers == nil {
-		g.ReceivedUsers = make(map[string]string)
+		g.ReceivedUsers = make(map[string]int64)
 	}
-	g.ReceivedUsers[user] = time.Now().Format("2006-01-02 15:04:05")
+	g.ReceivedUsers[user] = time.Now().Unix()
 	g.ReceivedCount++
 }
 

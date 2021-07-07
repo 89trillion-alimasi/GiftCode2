@@ -7,7 +7,6 @@ const (
 	Invalidgiftcodetype            = 404
 	GiftCodeDescription            = 405
 	PleaseEnterAValidTime          = 406
-	IncorrectTimeFormat            = 407
 	PackageContent                 = 408
 	CreateGiftCodeFaied            = 409
 	CreatedSuccessfully            = 201
@@ -29,7 +28,6 @@ var statusText = map[int]string{
 	Invalidgiftcodetype:            "礼品码类型不合法",
 	GiftCodeDescription:            "请输入礼品码描述信息",
 	PleaseEnterAValidTime:          "请输入有效期",
-	IncorrectTimeFormat:            "输入的礼品码有效期格式不正确",
 	PackageContent:                 "请输入礼包内容",
 	CreateGiftCodeFaied:            "创建礼品码失败",
 	CreatedSuccessfully:            "成功",
