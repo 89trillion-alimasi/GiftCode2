@@ -136,7 +136,7 @@ func Login(c *gin.Context) {
 			c.JSON(Successful, StatusText1(Successful, user))
 			return
 		case 2:
-			c.JSON(Registered, StatusText1(Successful, user))
+			c.JSON(Registered, StatusText1(Registered, user))
 			return
 		case 3:
 			c.JSON(InsertionUserFailed, StatusText(InsertionUserFailed))
