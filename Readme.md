@@ -105,11 +105,12 @@ userid=HrKcLApw
 
 ```json
 {
-    "Status": "存在成功返回",
-    "User": {
-        "UID": "HrKcLApw",
-        "Gold": "20",
-        "Diamond": "180"
+    "Code": 202,
+    "Message": "已为用户注册",
+    "Data": {
+        "UID": "lBzgbaiC",
+        "Gold": "0",
+        "Diamond": "0"
     }
 }
 ```
