@@ -10,29 +10,30 @@
 
 ```
 .
-├── Protobuf
+├── Protobuf 
 │   ├── clientresult.pb.go
 │   └── clientresult.proto
 ├── Readme.md
 ├── config
 │   ├── mongodb.go
 │   └── redis.go
-├── controller
-│   ├── StatusErr.go #状态码
+├── controller #控制层
+│   ├── StatusErr.go
 │   └── controller.go
 ├── gift4.png
+├── giftmodify2.png
 ├── go.mod
 ├── go.sum
 ├── http
 │   ├── main
 │   └── main.go
 ├── model
-│   ├── Dboperation
+│   ├── Dboperation #数据库操作
 │   │   └── dbopreation.go
 │   └── model.go
-├── router
+├── router #路由层
 │   └── router.go
-├── service
+├── service #业务层
 │   ├── rand.go
 │   ├── service.go
 │   ├── service_test.go
@@ -42,7 +43,6 @@
     │   └── locust_test.cpython-39.pyc
     ├── giftcode4_locust.html
     └── locust_test.py
-
 
 ```
 
