@@ -205,6 +205,9 @@ func ClientVerifyGiftCode(c *gin.Context) {
 	} else {
 
 	}
-	c.Writer.Write(result)
+
 	c.JSON(Successful, StatusText1(Successful, result))
+	c.String(Successful, "\n")
+	c.Writer.Write(result)
+
 }

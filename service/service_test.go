@@ -21,7 +21,7 @@ func TestLogin(t *testing.T) {
 	}
 
 	for _, v := range test {
-		got, _ := Login(v.userid)
+		got, _, _ := Login(v.userid)
 
 		if reflect.DeepEqual(got, v.want) {
 			t.Errorf("actully%v,expected %v", got, v.want)
@@ -48,7 +48,7 @@ func TestClientVerifyGiftCode(t *testing.T) {
 		}},
 	}
 	for _, v := range test {
-		got, _ := ClientVerifyGiftCode(v.userid, v.code)
+		got, _, _ := ClientVerifyGiftCode(v.userid, v.code)
 		data := &Protobuf.GeneralReward{}
 		err := proto.Unmarshal(got, data)
 		if err != nil {
