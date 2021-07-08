@@ -97,9 +97,9 @@ func VerifyGiftCode(req model.VerifyRequest) (*model.GiftCode, error) {
 }
 
 //用户登录和注册
-func Login(user_id string) (model.UerInfo, string) {
+func Login(user_id string) (model.UerInfo, string, interface{}) {
 	user, _ := Dboperation.Searchmongo("uid", user_id)
-
+	var t = 1
 	var err string
 	if user.UID == "" {
 		fmt.Println("UID  is  empty")
@@ -113,6 +113,7 @@ func Login(user_id string) (model.UerInfo, string) {
 				newUID = Userinfo(8)
 			} else {
 				flag = false
+				t = 2
 			}
 		}
 		if Dboperation.Insearchmongo(model.UerInfo{
@@ -127,22 +128,22 @@ func Login(user_id string) (model.UerInfo, string) {
 			}
 		} else {
 			err = "插入不成功"
-			return model.UerInfo{}, err
+			return model.UerInfo{}, err, 3
 		}
 
 	} else if user.UID != "" {
 		err = "用户存在成功返回"
 	}
-	return user, err
+	return user, err, t
 }
 
 //客户请求获取礼品码并返回protobuf数据
-func ClientVerifyGiftCode(user_id, gifcode string) ([]byte, string) {
+func ClientVerifyGiftCode(user_id, gifcode string) ([]byte, string, interface{}) {
 	var user model.VerifyRequest
 	//先判断用户id是否存在
 	uuser, err1 := Dboperation.Searchmongo("uid", user_id)
 	if err1 != nil {
-		return nil, "用户不存在，请先注册"
+		return nil, "用户不存在，请先注册", 1
 	}
 	//把用户值和礼品码值赋予给user
 	user.User = user_id
@@ -151,7 +152,7 @@ func ClientVerifyGiftCode(user_id, gifcode string) ([]byte, string) {
 	gift, err2 := VerifyGiftCode(user)
 
 	if err2 != nil {
-		return nil, "礼品码已失效或者礼包已领取"
+		return nil, "礼品码已失效或者礼包已领取", 2
 	}
 
 	giftpackage := gift.GiftPackages
@@ -210,10 +211,10 @@ func ClientVerifyGiftCode(user_id, gifcode string) ([]byte, string) {
 	out, err := proto.Marshal(&protobufinfo)
 
 	if err != nil {
-		return nil, "序列化protobuf失败"
+		return nil, "序列化protobuf失败", 3
 	}
 
-	return out, "success"
+	return out, "success", 4
 }
 
 //只能取一次礼品

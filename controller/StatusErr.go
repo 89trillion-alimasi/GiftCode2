@@ -19,6 +19,7 @@ const (
 	Userlogin                      = 414
 	Registered                     = 202
 	InsertionUserFailed            = 507
+	DecodeFaild                    = 508
 )
 
 var statusText = map[int]string{
@@ -40,10 +41,28 @@ var statusText = map[int]string{
 	Userlogin:                      "请输入登陆用户",
 	Registered:                     "已为用户注册",
 	InsertionUserFailed:            "插入用户信息失败",
+	DecodeFaild:                    "解析失败",
+}
+
+type Mesg struct {
+	Code    int
+	Message string
+	Data    interface{}
 }
 
 // StatusText returns a text for the HTTP status code. It returns the empty
 // string if the code is unknown.
-func StatusText(code int) string {
-	return statusText[code]
+func StatusText(code int) Mesg {
+	return Mesg{
+		Code:    code,
+		Message: statusText[code],
+	}
+}
+
+func StatusText1(code int, data interface{}) Mesg {
+	return Mesg{
+		Code:    code,
+		Message: statusText[code],
+		Data:    data,
+	}
 }
